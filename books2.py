@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI
+from fastapi import FastAPI, Path, Query, HTTPException
 from pydantic import BaseModel, Field
 
 app = FastAPI()
@@ -60,21 +60,21 @@ def read_books():
 
 
 @app.get("/books/{book_id}")
-def read_book(book_id: int):
+def read_book(book_id: int = Path(gt=0)):
     for book in BOOKS:
         if book.id == book_id:
             return book
-    return {"message": "Book not found"}
+    raise HTTPException(status_code=404, detail="Book not found")
 
 
 @app.get("/books/")
-def read_book_by_rating(rating: int):
+def read_book_by_rating(rating: int = Query(gt=0, lt=6)):
     books_with_rating = [book for book in BOOKS if book.rating == rating]
     return books_with_rating
 
 
 @app.get("/books/publish/")
-def read_book_by_published_date(published_date: int):
+def read_book_by_published_date(published_date: int = Query(gt=1999, lt=2031)):
     books_with_published_date = [
         book for book in BOOKS if book.published_date == published_date]
     return books_with_published_date
@@ -99,13 +99,13 @@ def update_book(book_id: int, book_request: BookRequest):
             BOOKS[index] = Book(id=book_id, author=book_request.author,
                                 title=book_request.title, description=book_request.description, rating=book_request.rating)
             return BOOKS[index]
-    return {"message": "Book not found"}
+    raise HTTPException(status_code=404, detail="Book not found")
 
 
 @app.delete("/books/delete_book/{book_id}")
-def delete_book(book_id: int):
+def delete_book(book_id: int = Path(gt=0)):
     for index, book in enumerate(BOOKS):
         if book.id == book_id:
             BOOKS.pop(index)
             return {"message": "Book deleted successfully"}
-    return {"message": "Book not found"}
+    raise HTTPException(status_code=404, detail="Book not found")
